@@ -258,7 +258,10 @@ export default function ReleaseHistory() {
       r.patientName?.toLowerCase().includes(q) ||
       r.takenBy?.toLowerCase().includes(q) ||
       r.contactNumber?.includes(q);
-    const normalizedType = r.bodyType === 'MLC' || r.releaseType === 'MLC' ? 'MLC' : 'NON_MLC';
+    // The body record is authoritative. Legacy releaseType values may be
+    // inconsistent, so never use them to classify the history filter.
+    const normalizedBodyType = String(r.bodyType || '').trim().toUpperCase().replace(/[\s_-]/g, '');
+    const normalizedType = normalizedBodyType === 'MLC' ? 'MLC' : 'NON_MLC';
     const matchType = !filterType || normalizedType === filterType;
     return matchQuery && matchType;
   });

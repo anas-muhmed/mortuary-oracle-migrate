@@ -68,6 +68,8 @@ function BodyRegistration() {
 
   const [nocFile, setNocFile] = useState(null);
   const [nocUploading, setNocUploading] = useState(false);
+  const [supportingFiles, setSupportingFiles] = useState([]);
+  const [existingDocuments, setExistingDocuments] = useState([]);
   const nocInputRef = useRef(null);
 
   // ---------- Time picker state ----------
@@ -290,11 +292,22 @@ function BodyRegistration() {
 
     try {
       // Prepare data - convert age to number
+      const uploadedDocuments = await Promise.all(supportingFiles.map(async (file) => {
+        const uploadData = new FormData();
+        uploadData.append('file', file);
+        const uploadResponse = await axios.post(`${API_BASE}/upload/single`, uploadData);
+        return {
+          fileName: uploadResponse.data.file.originalName || file.name,
+          fileUrl: uploadResponse.data.file.path
+        };
+      }));
+
       const submitData = {
         ...formData,
         dateOfDeath: parseOracleDate(formData.dateOfDeath) || formData.dateOfDeath || null,
         age: formData.age ? parseInt(formData.age) : null,
-        freezerRequired: formData.bodyType === 'MLC' ? formData.freezerRequired : null
+        freezerRequired: formData.bodyType === 'MLC' ? formData.freezerRequired : null,
+        documents: [...existingDocuments, ...uploadedDocuments]
       };
 
       console.log('Submitting body registration with data:', submitData);
@@ -359,12 +372,17 @@ function BodyRegistration() {
     setHospitalSearch('');
     setShowHospitalSuggestions(false);
     setNocFile(null);
+    setSupportingFiles([]);
+    setExistingDocuments([]);
   };
 
   const viewBody = async (id) => {
     try {
-      const response = await axios.get(`${API_BASE}/bodies/${id}`);
-      setSelectedBody(response.data);
+      const [response, documentsResponse] = await Promise.all([
+        axios.get(`${API_BASE}/bodies/${id}`),
+        axios.get(`${API_BASE}/bodies/${id}/documents`)
+      ]);
+      setSelectedBody({ ...response.data, documents: documentsResponse.data });
       setIsViewMode(true);
     } catch (error) {
       console.error('Error fetching body:', error);
@@ -373,8 +391,12 @@ function BodyRegistration() {
 
   const editBody = async (id) => {
     try {
-      const response = await axios.get(`${API_BASE}/bodies/${id}`);
+      const [response, documentsResponse] = await Promise.all([
+        axios.get(`${API_BASE}/bodies/${id}`),
+        axios.get(`${API_BASE}/bodies/${id}/documents`)
+      ]);
       const body = response.data;
+      setExistingDocuments(documentsResponse.data || []);
 
       // Set form data for editing
       setFormData({
@@ -1114,8 +1136,13 @@ function BodyRegistration() {
                     <input
                       type="file"
                       multiple
+                      accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                      onChange={e => setSupportingFiles(Array.from(e.target.files || []))}
                       className="mt-2 text-sm text-gray-500"
                     />
+                    {supportingFiles.length > 0 && (
+                      <p className="mt-2 text-sm text-green-700">{supportingFiles.length} document(s) selected</p>
+                    )}
                   </div>
                 </div>
 
@@ -1298,6 +1325,29 @@ function BodyRegistration() {
                       <FileText size={16} />
                       View Document
                     </a>
+                  </div>
+                </div>
+              )}
+
+              {selectedBody.documents?.length > 0 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <FileText size={18} className="text-blue-600" />
+                    Supporting Documents
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedBody.documents.map((document) => (
+                      <a
+                        key={document.id || document.fileUrl}
+                        href={document.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                      >
+                        <FileText size={16} />
+                        {document.fileName || 'View Document'}
+                      </a>
+                    ))}
                   </div>
                 </div>
               )}
