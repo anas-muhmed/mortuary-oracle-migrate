@@ -1,0 +1,9 @@
+🔥 Step 1: Kill existing process
+
+Run:
+
+taskkill /IM node.exe /F
+
+
+🔥 Step 2: Restart
+npm run dev

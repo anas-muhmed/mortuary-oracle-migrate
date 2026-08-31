@@ -1,0 +1,334 @@
+# Deprecated MySQL Production Deployment Guide
+
+> This is the retired MySQL deployment guide. Use the Oracle setup instructions in `README.md` and apply `oracle-schema.sql`; do not use the credentials, installation, or backup commands below.
+## Mortuary Management System — MOSC Medical College
+
+> **Target**: Deploy on a Windows Server / PC that is accessible to all devices on the **hospital LAN** (local network).  
+> The Express backend will serve the built React frontend directly — no separate Nginx or IIS required.
+
+---
+
+## Architecture Overview
+
+```
+[Hospital LAN Devices] ──────► [Server PC: port 3001]
+                                    │
+                                    ├─ Express (Node.js)  ← API + serves React build
+                                    └─ MySQL (local)       ← Database
+```
+
+After deployment, users open `http://<SERVER_IP>:3001` in their browser — no Vite, no dev server.
+
+---
+
+## PART 1 — Prepare the Server PC
+
+### Step 1: Note the server's LAN IP address
+
+Open **Command Prompt** on the server and run:
+
+```cmd
+ipconfig
+```
+
+Look for **IPv4 Address** under your active network adapter.  
+Example: `192.168.1.100`  
+**Write this down** — all devices on the LAN will use this IP.
+
+> [!TIP]
+> Set a **static IP** on the server so the address never changes.  
+> Go to: Network Settings → Ethernet Adapter → IPv4 → Use the following IP address → enter your current values.
+
+---
+
+## PART 2 — Install Required Software
+
+### Step 2: Install Node.js (v20 LTS recommended)
+
+1. Download from: https://nodejs.org/en/download  
+2. Choose **Windows Installer (.msi) — LTS version**  
+3. Run the installer, keep all defaults, check **"Add to PATH"**  
+4. Verify:
+
+```cmd
+node -v
+npm -v
+```
+
+---
+
+### Step 3: Install MySQL Server
+
+1. Download **MySQL Community Server**: https://dev.mysql.com/downloads/mysql/  
+2. Choose **MySQL Installer for Windows**  
+3. During setup, select: **Server Only**  
+4. Set the root password (example: `StrongPass@2025!`)  
+5. Complete installation  
+6. Verify MySQL is running:
+
+```cmd
+mysql -u root -p
+```
+
+> [!IMPORTANT]
+> **Remember your MySQL root password.** You will need to update it in `server.js`.
+
+---
+
+## PART 3 — Deploy the Application
+
+### Step 4: Copy the Project to the Server
+
+Copy the entire project folder to the server.  
+Recommended location:
+
+```
+C:\mortuary-system\
+```
+
+You can use a USB drive, shared folder, or Git clone.
+
+> [!CAUTION]
+> Do **NOT** copy `node_modules\` or the `dist\` folder from your dev machine.  
+> Delete them if they exist. You will regenerate them on the server.
+
+---
+
+### Step 5: Update Database Credentials in `server.js`
+
+Open `C:\mortuary-system\server.js` in Notepad or any editor.
+
+Find this block (around line 55) and update:
+
+```js
+const dbConfig = {
+  host: 'localhost',
+  user: 'root',
+  password: 'StrongPass@2025!',   // ← YOUR MYSQL ROOT PASSWORD
+  database: 'mortuary_db',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
+```
+
+Save the file.
+
+---
+
+### Step 6: Update Server to Listen on All Network Interfaces
+
+Find this block near the bottom of `server.js`:
+
+```js
+initDatabase().then(() => {
+  app.listen(PORT, () => {
+```
+
+Change it to bind to **all interfaces** (required for LAN access):
+
+```js
+initDatabase().then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Mortuary Management System running on port ${PORT}`);
+    console.log(`Connected to MySQL database: mortuary_db`);
+  });
+```
+
+Save the file.
+
+---
+
+### Step 7: Install Node.js Dependencies
+
+Open **Command Prompt** in `C:\mortuary-system\` and run:
+
+```cmd
+npm install
+```
+
+This installs all packages listed in `package.json`.
+
+---
+
+### Step 8: Build the React Frontend
+
+Still in `C:\mortuary-system\`, run:
+
+```cmd
+npm run build
+```
+
+This creates the `dist\` folder — the compiled, optimized React app.  
+The Express server serves this folder automatically.
+
+You should see output like:
+```
+✓ built in Xs
+dist/index.html
+dist/assets/...
+```
+
+> [!IMPORTANT]
+> Every time you update the frontend code, you must run `npm run build` again on the server.
+
+---
+
+## PART 4 — Run as a Background Service with PM2
+
+PM2 keeps the server running 24/7, auto-restarts on crashes, and starts on system boot.
+
+### Step 9: Install PM2 globally
+
+```cmd
+npm install -g pm2
+npm install -g pm2-windows-startup
+```
+
+### Step 10: Start the application with PM2
+
+```cmd
+cd C:\mortuary-system
+pm2 start server.js --name "mortuary-system"
+```
+
+### Step 11: Verify it is running
+
+```cmd
+pm2 status
+```
+
+You should see:
+```
+┌────┬──────────────────┬─────────┬──────┬───────────┬──────────┐
+│ id │ name             │ mode    │ ↺    │ status    │ cpu      │
+├────┼──────────────────┼─────────┼──────┼───────────┼──────────┤
+│ 0  │ mortuary-system  │ fork    │ 0    │ online    │ 0%       │
+└────┴──────────────────┴─────────┴──────┴───────────┴──────────┘
+```
+
+### Step 12: Configure PM2 to start on system boot
+
+```cmd
+pm2-startup install
+pm2 save
+```
+
+This ensures the app restarts automatically if the server reboots.
+
+---
+
+## PART 5 — Open the Firewall
+
+### Step 13: Allow port 3001 through Windows Firewall
+
+Run **Command Prompt as Administrator** and execute:
+
+```cmd
+netsh advfirewall firewall add rule name="Mortuary System" dir=in action=allow protocol=TCP localport=3001
+```
+
+OR use the GUI:
+1. Open **Windows Defender Firewall with Advanced Security**
+2. Click **Inbound Rules** → **New Rule**
+3. Choose **Port** → TCP → Specific local port: `3001`
+4. Allow the connection → apply to all profiles
+5. Name it `Mortuary System` → Finish
+
+---
+
+## PART 6 — Access from the Network
+
+### Step 14: Test access
+
+On **any device connected to the same LAN** (hospital network):
+
+1. Open a browser
+2. Navigate to: `http://192.168.1.100:3001` (replace with your server's actual IP)
+3. The login page should appear
+
+> [!TIP]
+> Create a browser shortcut or bookmark on each workstation PC with the URL for easy access.
+
+---
+
+## PART 7 — Day-to-Day Management
+
+### Useful PM2 commands
+
+| Command | Purpose |
+|---|---|
+| `pm2 status` | Check if app is running |
+| `pm2 logs mortuary-system` | View live logs |
+| `pm2 restart mortuary-system` | Restart after code changes |
+| `pm2 stop mortuary-system` | Stop the application |
+| `pm2 monit` | Live CPU/memory monitor |
+
+### Deploy a code update
+
+When you update any backend code:
+```cmd
+cd C:\mortuary-system
+pm2 restart mortuary-system
+```
+
+When you update any frontend (React) code:
+```cmd
+cd C:\mortuary-system
+npm run build
+pm2 restart mortuary-system
+```
+
+---
+
+## PART 8 — MySQL Backup (Recommended)
+
+### Manual backup
+
+```cmd
+mysqldump -u root -p mortuary_db > C:\backups\mortuary_backup_%DATE%.sql
+```
+
+### Scheduled automatic backup
+
+Create a `.bat` file at `C:\mortuary-backup.bat`:
+
+```bat
+@echo off
+set DATE=%date:~10,4%-%date:~4,2%-%date:~7,2%
+mysqldump -u root -pStrongPass@2025! mortuary_db > C:\backups\mortuary_%DATE%.sql
+```
+
+Then schedule it via **Windows Task Scheduler** to run daily.
+
+---
+
+## Quick Reference Summary
+
+| What | Value |
+|---|---|
+| Server URL | `http://<SERVER_IP>:3001` |
+| Backend Port | `3001` |
+| Database | `mortuary_db` (MySQL, auto-created on first start) |
+| App Location | `C:\mortuary-system\` |
+| Process Manager | PM2 |
+| Build command | `npm run build` |
+| Start command | `pm2 start server.js --name mortuary-system` |
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| App not accessible from other PCs | Check Step 13 (firewall rule) |
+| "Cannot connect to DB" error | Verify MySQL is running and password in `server.js` is correct |
+| Page shows blank / 404 | Run `npm run build` again |
+| App crashes on reboot | Run `pm2-startup install && pm2 save` |
+| PM2 not found | Run `npm install -g pm2` again |
+
+---
+
+> [!NOTE]
+> **Uploads folder**: The system stores uploaded files (NOC documents etc.) in `C:\mortuary-system\uploads\`.  
+> Make sure this folder is included in any backups you create.
