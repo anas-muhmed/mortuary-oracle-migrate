@@ -7,3 +7,22 @@ taskkill /IM node.exe /F
 
 🔥 Step 2: Restart
 npm run dev
+
+
+
+
+cabins — Stores details of mortuary cabin structures (cabin number, type: freezer/normal, status, floor, daily tariff).
+admin — Stores administrative users.
+body_types — Stores categories of bodies.
+concession_authorities — Stores officials authorized to grant discounts/concessions.
+bodies — Stores patient and body details registered (name, hospital/MLC numbers, witness details, status).
+cabin_allocations — Records which cabin is allocated to which body, along with admission/release timestamps and rates.
+billing — Manages cabin stay billing records, concessions, discounts, and payment metadata.
+billing_services — Stores individual service charges associated with a cabin stay bill.
+service_billing — Manages standalone mortuary services billing.
+mortuary_service_master — Master list of services offered (name, tariff rate).
+body_releases — Stores details regarding the release of a body (who took it, relationship, police/NOC documents, release time).
+body_documents — Stores URLs and file metadata for supporting files/documents uploaded for bodies.
+housekeeping_tasks — Manages cleaning task status and assignment details for cabins.
+system_settings — Global system variables (e.g. daily first-day charge and hourly charges).
+mortuary_users — User registration records with approval status and contact info.

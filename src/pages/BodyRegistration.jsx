@@ -269,6 +269,22 @@ function BodyRegistration() {
     }
   };
 
+  const handleFileSelect = (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length > 0) {
+      setSupportingFiles(prev => [...prev, ...selectedFiles]);
+    }
+    e.target.value = '';
+  };
+
+  const removeExistingDocument = (indexToRemove) => {
+    setExistingDocuments(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const removeSupportingFile = (indexToRemove) => {
+    setSupportingFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -1130,6 +1146,82 @@ function BodyRegistration() {
                 {/* Document Upload */}
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Document Upload</h3>
+
+                  {/* Existing Uploaded Documents (Edit Flow) */}
+                  {existingDocuments.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Existing Uploaded Documents:</p>
+                      <div className="space-y-2">
+                        {existingDocuments.map((doc, idx) => (
+                          <div
+                            key={doc.id || idx}
+                            className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm"
+                          >
+                            <div className="flex items-center gap-2 overflow-hidden mr-2">
+                              <FileText size={18} className="text-blue-600 flex-shrink-0" />
+                              <span className="font-medium text-gray-800 truncate" title={doc.fileName || 'Document'}>
+                                {doc.fileName || `Document ${idx + 1}`}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <a
+                                href={doc.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium hover:underline text-xs"
+                              >
+                                <Eye size={14} />
+                                View
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => removeExistingDocument(idx)}
+                                className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                title="Remove document"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Newly Selected Files */}
+                  {supportingFiles.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Selected Files to Upload:</p>
+                      <div className="space-y-2">
+                        {supportingFiles.map((file, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                          >
+                            <div className="flex items-center gap-2 overflow-hidden mr-2">
+                              <FileText size={18} className="text-gray-500 flex-shrink-0" />
+                              <span className="font-medium text-gray-800 truncate" title={file.name}>
+                                {file.name}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                ({(file.size / 1024).toFixed(1)} KB)
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeSupportingFile(idx)}
+                              className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                              title="Remove file"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* File Upload Dropzone */}
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                     <FileText className="mx-auto text-gray-400 mb-2" size={32} />
                     <p className="text-sm text-gray-500">Upload supporting documents</p>
@@ -1137,12 +1229,10 @@ function BodyRegistration() {
                       type="file"
                       multiple
                       accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
-                      onChange={e => setSupportingFiles(Array.from(e.target.files || []))}
+                      onChange={handleFileSelect}
                       className="mt-2 text-sm text-gray-500"
                     />
-                    {supportingFiles.length > 0 && (
-                      <p className="mt-2 text-sm text-green-700">{supportingFiles.length} document(s) selected</p>
-                    )}
+                    <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF, DOC, XLS supported</p>
                   </div>
                 </div>
 
