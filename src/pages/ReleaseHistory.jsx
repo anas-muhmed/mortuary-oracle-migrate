@@ -51,6 +51,14 @@ function Badge({ children, color = 'gray' }) {
   );
 }
 
+function documentUrl(value) {
+  if (!value) return null;
+  const normalized = String(value).replace(/\\/g, '/');
+  if (/^https?:\/\//i.test(normalized) || normalized.startsWith('/uploads/')) return normalized;
+  const filename = normalized.split('/').filter(Boolean).pop();
+  return filename ? `/uploads/${encodeURIComponent(filename)}` : null;
+}
+
 function DetailModal({ record, onClose }) {
   if (!record) return null;
 
@@ -117,6 +125,33 @@ function DetailModal({ record, onClose }) {
               {isMLC && record.siName && <InfoRow label="SI Name" value={record.siName} />}
             </Grid>
           </Section>
+
+          {(record.nocDocument || record.legalDocuments) && (
+            <Section icon={<FileText size={15} />} title="Release Documents">
+              <div className="flex flex-wrap gap-3">
+                {record.nocDocument && (
+                  <a
+                    href={documentUrl(record.nocDocument)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                  >
+                    <FileText size={16} /> View NOC/PCC
+                  </a>
+                )}
+                {record.legalDocuments && (
+                  <a
+                    href={documentUrl(record.legalDocuments)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                  >
+                    <FileText size={16} /> View Legal Document
+                  </a>
+                )}
+              </div>
+            </Section>
+          )}
 
           {/* Billing Info */}
           {record.billingId && (
@@ -223,7 +258,8 @@ export default function ReleaseHistory() {
       r.patientName?.toLowerCase().includes(q) ||
       r.takenBy?.toLowerCase().includes(q) ||
       r.contactNumber?.includes(q);
-    const matchType = !filterType || r.bodyType === filterType;
+    const normalizedType = r.bodyType === 'MLC' || r.releaseType === 'MLC' ? 'MLC' : 'NON_MLC';
+    const matchType = !filterType || normalizedType === filterType;
     return matchQuery && matchType;
   });
 

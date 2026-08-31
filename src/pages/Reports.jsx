@@ -296,7 +296,7 @@ function Reports() {
                         </td>
                         <td className="px-4 py-3 text-sm">{new Date(row.admissionDateTime).toLocaleString('en-IN')}</td>
                         <td className="px-4 py-3 text-sm">{row.releaseDateTime ? new Date(row.releaseDateTime).toLocaleString('en-IN') : 'Active'}</td>
-                        <td className="px-4 py-3 text-sm">{row.durationHours ? `${row.durationHours} hrs` : '-'}</td>
+                        <td className="px-4 py-3 text-sm">{row.durationHours != null ? `${row.durationHours} hrs` : '-'}</td>
                       </tr>
                     ))}
                     {occupancyData.data?.length === 0 && (

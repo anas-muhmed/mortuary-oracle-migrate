@@ -13,6 +13,8 @@ function BodyRelease() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState('');
+  const [nocFile, setNocFile] = useState(null);
+  const [legalDocumentsFile, setLegalDocumentsFile] = useState(null);
   const [releaseData, setReleaseData] = useState({
     releaseType: 'Non-MLC',
     takenBy: '',
@@ -74,6 +76,8 @@ function BodyRelease() {
       nocDocument: '',
       legalDocuments: ''
     });
+    setNocFile(null);
+    setLegalDocumentsFile(null);
     setShowModal(true);
   };
 
@@ -87,10 +91,19 @@ function BodyRelease() {
     setLoading(true);
 
     try {
-      await axios.post(`${API_BASE}/body-releases`, {
-        bodyId: selectedBody.id,
-        ...releaseData
-      });
+      const formData = new FormData();
+      formData.append('bodyId', selectedBody.id);
+      formData.append('caseType', selectedBody.bodyType === 'MLC' ? 'MLC' : 'NON_MLC');
+      formData.append('bodyTakenBy', releaseData.takenBy);
+      formData.append('relationship', releaseData.relationship);
+      formData.append('address', releaseData.address);
+      formData.append('contactNumber', releaseData.contactNumber);
+      formData.append('policeStationName', releaseData.policeStation);
+      formData.append('siName', releaseData.siName);
+      if (nocFile) formData.append('nocFile', nocFile);
+      if (legalDocumentsFile) formData.append('legalDocumentsFile', legalDocumentsFile);
+
+      await axios.post(`${API_BASE}/body-releases`, formData);
 
       alert('Body released successfully');
       setShowModal(false);
@@ -574,8 +587,11 @@ function BodyRelease() {
                       <p className="text-sm text-gray-500">Upload NOC/PCC</p>
                       <input
                         type="file"
+                        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                        onChange={e => setNocFile(e.target.files?.[0] || null)}
                         className="mt-2 text-sm text-gray-500 w-full"
                       />
+                      {nocFile && <p className="mt-2 text-xs text-green-700">Selected: {nocFile.name}</p>}
                     </div>
                   </div>
                   <div>
@@ -585,9 +601,11 @@ function BodyRelease() {
                       <p className="text-sm text-gray-500">Upload Legal Docs</p>
                       <input
                         type="file"
-                        multiple
+                        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                        onChange={e => setLegalDocumentsFile(e.target.files?.[0] || null)}
                         className="mt-2 text-sm text-gray-500 w-full"
                       />
+                      {legalDocumentsFile && <p className="mt-2 text-xs text-green-700">Selected: {legalDocumentsFile.name}</p>}
                     </div>
                   </div>
                 </div>

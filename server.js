@@ -1428,8 +1428,14 @@ app.post('/api/body-releases', upload.fields([
     }
 
     // 4. Save uploaded files
-    const nocCertificateUrl = req.files?.nocFile?.[0]?.path || null;
-    const legalDocumentsUrl = req.files?.legalDocumentsFile?.[0]?.path || null;
+    // Store public URLs, not host-specific filesystem paths, so documents can
+    // be opened from every client device.
+    const nocCertificateUrl = req.files?.nocFile?.[0]
+      ? `/uploads/${req.files.nocFile[0].filename}`
+      : null;
+    const legalDocumentsUrl = req.files?.legalDocumentsFile?.[0]
+      ? `/uploads/${req.files.legalDocumentsFile[0].filename}`
+      : null;
 
     // 5. INSERT into body_releases
     const id = uuidv4();
@@ -1492,6 +1498,8 @@ app.get('/api/release-history', async (req, res) => {
         br.contactNumber,
         br.policeStation,
         br.siName,
+        br.nocDocument,
+        br.legalDocuments,
         br.releaseDateTime,
         br.createdAt AS releaseCreatedAt,
         bo.bodyNumber,
@@ -1618,7 +1626,11 @@ app.get('/api/reports/cabin-occupancy', async (req, res) => {
         b.bodyType,
         ca.admissionDateTime,
         ca.releaseDateTime,
-        ROUND(ABS((COALESCE(ca.releaseDateTime, SYSDATE) - ca.admissionDateTime) * 24), 1) as durationHours
+        GREATEST(0, ROUND(
+          (CAST(COALESCE(ca.releaseDateTime, CURRENT_TIMESTAMP) AS DATE)
+            - CAST(ca.admissionDateTime AS DATE)) * 24,
+          1
+        )) AS durationHours
       FROM cabin_allocations ca
       JOIN cabins c ON ca.cabinId = c.id
       JOIN bodies b ON ca.bodyId = b.id
