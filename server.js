@@ -1639,7 +1639,7 @@ app.get('/api/reports/cabin-occupancy', async (req, res) => {
     const params = [];
 
     if (startDate) { query += ' AND ca.admissionDateTime >= ?'; params.push(startDate); }
-    if (endDate) { query += ' AND ca.admissionDateTime <= ?'; params.push(endDate); }
+    if (endDate) { query += ' AND ca.admissionDateTime <= ?'; params.push(endDate.includes(' ') ? endDate : endDate + ' 23:59:59'); }
     if (cabinNo) { query += ' AND c.cabinNumber = ?'; params.push(cabinNo); }
     if (bodyType) { query += ' AND b.bodyType = ?'; params.push(bodyType); }
 
@@ -1677,7 +1677,7 @@ app.get('/api/reports/invoice-analysis', async (req, res) => {
     const params = [];
 
     if (startDate) { query += ' AND b.createdAt >= ?'; params.push(startDate); }
-    if (endDate) { query += ' AND b.createdAt <= ?'; params.push(endDate); }
+    if (endDate) { query += ' AND b.createdAt <= ?'; params.push(endDate.includes(' ') ? endDate : endDate + ' 23:59:59'); }
     if (status) { query += ' AND b.status = ?'; params.push(status); }
 
     query += ' ORDER BY b.createdAt DESC';
@@ -1720,7 +1720,7 @@ app.get('/api/reports/concession', async (req, res) => {
     const params = [];
 
     if (startDate) { query += ' AND b.createdAt >= ?'; params.push(startDate); }
-    if (endDate) { query += ' AND b.createdAt <= ?'; params.push(endDate); }
+    if (endDate) { query += ' AND b.createdAt <= ?'; params.push(endDate.includes(' ') ? endDate : endDate + ' 23:59:59'); }
 
     query += ' ORDER BY b.createdAt DESC';
     const data = await queryAll(query, params);

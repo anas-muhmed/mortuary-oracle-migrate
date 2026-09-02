@@ -90,7 +90,7 @@ function Reports() {
 
   const exportToCSV = () => {
     let data, headers;
-    
+
     if (activeReport === 'occupancy') {
       data = occupancyData.data;
       headers = ['Body Number', 'Patient Name', 'Cabin', 'Type', 'Admission', 'Release', 'Duration (hrs)'];
@@ -143,11 +143,10 @@ function Reports() {
             <button
               key={tab.id}
               onClick={() => setActiveReport(tab.id)}
-              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                activeReport === tab.id
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeReport === tab.id
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
             >
               <tab.icon size={18} />
               {tab.label}
@@ -163,7 +162,7 @@ function Reports() {
                 <Calendar size={16} className="text-gray-500" />
                 <span className="text-sm font-medium text-gray-700">Filters:</span>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-600">From:</label>
                 <input
